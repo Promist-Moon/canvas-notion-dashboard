@@ -2,4 +2,4 @@
 
 Sync your Canvas assignments into your Notion database!
 
-![Homepage](assets/homepage.png)
+![Homepage](assets/homepg.png)
