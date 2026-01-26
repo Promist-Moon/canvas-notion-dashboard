@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas to Notion | Seamless Sync</title>
+    <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">
+            <span class="logo-icon">📁</span> CanvasSync
+        </div>
+        <div class="nav-links">
+            <a href="#">Guides</a>
+            <a href="{% url 'accounts:login' %}" class="btn-text">Log in</a>
+        </div>
+    </nav>
+
+    <main class="hero">
+        <div class="hero-content">
+            <h1 class="fade-in">Your Canvas assignments,<br>automatically in <span class="accent-pink">Notion.</span></h1>
+            <p class="subtitle fade-in-delay">Stop manual data entry. Sync your courses, deadlines, and grades into your workspace with one click.</p>
+            
+            <div class="cta-container fade-in-delay">
+                <a href="{% url 'accounts:register' %}" class="btn btn-black">Create account</a>
+                <a href="{% url 'accounts:login' %}" class="btn btn-outline">Log in</a>
+            </div>
+        </div>
+
+        <div class="preview-card fade-in-up">
+            <div class="card-header">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+            </div>
+            <div class="card-body">
+                <div class="skeleton-row">
+                    <span class="tag tag-blue">CS2040S</span>
+                    <span class="text-line">Algorithm Analysis - Due Oct 24</span>
+                </div>
+                <div class="skeleton-row">
+                    <span class="tag tag-orange">MKT4412</span>
+                    <span class="text-line">Market Theory Quiz - Due Oct 26</span>
+                </div>
+                <div class="skeleton-row">
+                    <span class="tag tag-purple">AH2101</span>
+                    <span class="text-line">Art History Essay - Due Nov 02</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

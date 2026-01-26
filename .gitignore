@@ -1,0 +1,7 @@
+/cn_venv/
+
+**/__pycache__
+
+**/.env
+
+**/db.sqlite3
