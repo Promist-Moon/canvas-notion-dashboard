@@ -5,7 +5,10 @@ def landing(request):
     if request.user.is_authenticated:
         settings, created = UserSettings.objects.get_or_create(user=request.user)
         return render(request, "core/home.html", {
-            'db_properties': settings.db_properties
+            'db_properties': settings.db_properties,
+            'notion_token': settings.notion_token,
+            'canvas_token': settings.canvas_token,
+            'school_domain': settings.school_domain,
         })
     return render(request, "core/welcome.html")
 
