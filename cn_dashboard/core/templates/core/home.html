@@ -4,54 +4,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canvas to Notion | Seamless Sync</title>
+    <title>Dashboard | CanvasSync</title>
     <link rel="stylesheet" href="{% static 'core/styles.css' %}">
 </head>
-<body>
+<body class="dashboard-body">
 
-    <nav class="navbar">
-        <div class="logo">
-            <span class="logo-icon">📁</span> CanvasSync
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span class="avatar">JS</span> {{ request.user.first_name|default:request.user.username }}'s Workspace
         </div>
-        <div class="nav-links">
-            <a href="#">Guides</a>
-            <a href="{% url 'accounts:login' %}" class="btn-text">Log in</a>
-        </div>
-    </nav>
+        <nav class="sidebar-nav">
+            <div class="nav-item active">🏠 Home</div>
+            <div class="nav-item">🔄 Sync History</div>
+            <div class="nav-item">⚙️ Settings</div>
+        </nav>
+    </aside>
 
-    <main class="hero">
-        <div class="hero-content">
-            <h1 class="fade-in">Your Canvas assignments,<br>automatically in <span class="accent-pink">Notion.</span></h1>
-            <p class="subtitle fade-in-delay">Stop manual data entry. Sync your courses, deadlines, and grades into your workspace with one click.</p>
-            
-            <div class="cta-container fade-in-delay">
-                <a href="{% url 'accounts:register' %}" class="btn btn-black">Create account</a>
-                <a href="{% url 'accounts:login' %}" class="btn btn-outline">Log in</a>
-            </div>
-        </div>
+    <main class="main-content">
+        <header class="content-header">
+            <div class="breadcrumb">Workspace / <span>Canvas Dashboard</span></div>
+        </header>
 
-        <div class="preview-card fade-in-up">
-            <div class="card-header">
-                <span class="dot red"></span>
-                <span class="dot yellow"></span>
-                <span class="dot green"></span>
-            </div>
-            <div class="card-body">
-                <div class="skeleton-row">
-                    <span class="tag tag-blue">CS2040S</span>
-                    <span class="text-line">Algorithm Analysis - Due Oct 24</span>
+        <section class="canvas">
+            <h1 class="page-title">🚀 CanvasSync Control</h1>
+            <p class="subtitle">Manage your Notion integration and secret keys below.</p>
+
+            <div class="action-grid">
+                <div class="action-card" onclick="openModal('secretsModal')">
+                    <div class="card-icon">🔑</div>
+                    <div class="card-info">
+                        <h3>Configure Secrets</h3>
+                        <p>Set your Notion API Key and Canvas Token.</p>
+                    </div>
                 </div>
-                <div class="skeleton-row">
-                    <span class="tag tag-orange">MKT4412</span>
-                    <span class="text-line">Market Theory Quiz - Due Oct 26</span>
-                </div>
-                <div class="skeleton-row">
-                    <span class="tag tag-purple">AH2101</span>
-                    <span class="text-line">Art History Essay - Due Nov 02</span>
+
+                <div class="action-card" onclick="openModal('dbModal')">
+                    <div class="card-icon">📊</div>
+                    <div class="card-info">
+                        <h3>Database Settings</h3>
+                        <p>Map properties like Due Dates and Status.</p>
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <div class="execution-section fade-in-delay">
+                <hr class="notion-hr">
+                <div class="action-grid">
+                    <div class="action-card highlight-hover" onclick="handleAction('create')">
+                        <div class="card-icon">✨</div>
+                        <div class="card-info">
+                            <h3>Create Database</h3>
+                            <p>Generate a pre-formatted Canvas board in Notion.</p>
+                        </div>
+                    </div>
+
+                    <div class="action-card sync-card" onclick="handleAction('import')">
+                        <div class="card-icon">📥</div>
+                        <div class="card-info">
+                            <h3>Import Assignments</h3>
+                            <p>Fetch latest data and sync to your database.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
+    <div id="secretsModal" class="notion-modal-overlay">
+        <div class="notion-modal">
+            <h2>Secret Keys</h2>
+            <p class="modal-desc">These are stored securely and never shared.</p>
+            <form method="post" action="{% url 'core:configure_secrets' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="notion-label">Notion Integration Token</label>
+                    <input type="password" name="notion_token" class="notion-input" placeholder="secret_...">
+                </div>
+                <div class="form-group">
+                    <label class="notion-label">Canvas API Developer Key</label>
+                    <input type="password" name="canvas_token" class="notion-input" placeholder="7892~...">
+                </div>
+                <div class="form-group">
+                    <label class="notion-label">School Domain</label>
+                    <input type="text" name="school_domain" class="notion-input" placeholder="canvas.nus.edu.sg">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('secretsModal')">Cancel</button>
+                    <button type="submit" class="btn btn-black">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="dbModal" class="notion-modal-overlay">
+        <div class="notion-modal">
+            <h2>Database Settings</h2>
+            <p class="modal-desc">Select the properties you want to sync to Notion.</p>
+            
+            <form method="POST" action="{% url 'core:save_db_settings' %}">
+                {% csrf_token %}
+                
+                <label class="notion-label">Active Properties</label>
+                <div id="selected-properties-container" class="property-bar">
+                    <span class="tag tag-default">Assignment</span>
+                    <span class="tag tag-default">Course</span>
+                    <span class="tag tag-default">Due Date</span>
+                </div>
+
+                <label class="notion-label" style="margin-top: 20px;">Available Options</label>
+                <div class="property-options">
+                    <div class="prop-chip" onclick="toggleProperty('Semester', 'blue')">+ Semester</div>
+                    <div class="prop-chip" onclick="toggleProperty('Week', 'orange')">+ Week</div>
+                    <div class="prop-chip" onclick="toggleProperty('URL', 'purple')">+ URL</div>
+                    <div class="prop-chip" onclick="toggleProperty('Status', 'green')">+ Status</div>
+                    <div class="prop-chip" onclick="toggleProperty('Points', 'pink')">+ Points</div>
+                </div>
+
+                <div id="hidden-inputs"></div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('dbModal')">Cancel</button>
+                    <button type="submit" class="btn btn-black">Save Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{ db_properties|json_script:"db-properties" }}
+
+    <script>
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) {
+                console.warn(`Modal not found: ${id}`);
+                return;
+            }
+            modal.style.display = 'flex';
+        }
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) {
+                console.warn(`Modal not found: ${id}`);
+                return;
+            }
+            modal.style.display = 'none';
+        }
+
+        function handleAction(type) {
+            if (type === 'create') {
+                alert("Initializing Notion Database structure...");
+                // Add your Django/API call logic here
+            } else if (type === 'import') {
+                const card = event.currentTarget;
+                card.classList.add('loading');
+                card.querySelector('p').innerText = "Syncing with Canvas...";
+                
+                // Simulate a sync process
+                setTimeout(() => {
+                    card.classList.remove('loading');
+                    card.querySelector('p').innerText = "Sync complete! Check Notion.";
+                    card.querySelector('.card-icon').innerText = "✅";
+                }, 3000);
+            }
+        }
+
+        const propertiesData = document.getElementById("db-properties");
+        const savedProperties = propertiesData ? JSON.parse(propertiesData.textContent) : [];
+        const activeProperties = new Set();
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // Only attempt to loop if savedProperties is an array
+            if (Array.isArray(savedProperties)) {
+                savedProperties.forEach(prop => {
+                    const colorMap = {
+                        'Semester': 'blue',
+                        'Week': 'orange',
+                        'URL': 'purple',
+                        'Status': 'green',
+                        'Points': 'pink'
+                    };
+                    if (colorMap[prop]) {
+                        toggleProperty(prop, colorMap[prop]);
+                    }
+                });
+            }
+        });
+
+        function toggleProperty(name, color) {
+            if (activeProperties.has(name)) return;
+            activeProperties.add(name);
+
+            const container = document.getElementById('selected-properties-container');
+            const pill = document.createElement('span');
+            
+            // Ensure the class name matches your CSS exactly (e.g., .pill-blue)
+            pill.className = `tag pill-${color}`;
+            pill.id = `pill-${name}`;
+            pill.style.display = 'inline-flex';
+            pill.style.alignItems = 'center';
+            
+            // Use event.stopPropagation() to prevent any weird bubbling
+            pill.innerHTML = `${name} <span style="cursor:pointer; margin-left:8px; font-weight:bold;" onclick="event.stopPropagation(); removeProperty('${name}')">×</span>`;
+            container.appendChild(pill);
+
+            const hiddenContainer = document.getElementById('hidden-inputs');
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'properties';
+            input.value = name;
+            input.id = `input-${name}`;
+            hiddenContainer.appendChild(input);
+        }
+
+        function removeProperty(name) {
+            activeProperties.delete(name);
+            document.getElementById(`pill-${name}`).remove();
+            document.getElementById(`input-${name}`).remove();
+        }
+    </script>
 </body>
 </html>
