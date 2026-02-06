@@ -51,8 +51,8 @@ class User:
         return {"created": created, "updated": updated, "errors": errors}
 
     # Creates a new Canvas Assignments database in the notionPageId page
-    def createDatabase(self, page_id_name="Default"):
-        return self.notionProfile.createNewDatabase(self.page_ids[page_id_name])
+    def createDatabase(self, page_id_name="Default", properties=None):
+        return self.notionProfile.createNewDatabase(self.page_ids[page_id_name], properties=properties)
 
     # This function adds NEW assignments to the database based on whether the assignments URL can be found in the notion database
     def addNewDatabaseItems(self, courseList, timeframe=None):

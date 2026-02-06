@@ -54,6 +54,16 @@ NOTION_DB_PROPERTIES = {
         "select": {"options": []},
     },
     "Due Date": {"date": {}},
+    "Status": {
+        "type": "select",
+        "select": {
+            "options": [
+                {"name": "Not started", "color": "red"},
+                {"name": "In progress", "color": "yellow"},
+                {"name": "Done", "color": "green"},
+            ]
+        },
+    },
     "Week": {
         "name": "Week",
         "type": "select",

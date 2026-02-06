@@ -46,7 +46,7 @@ def create_database(request):
 
 	try:
 		user = User(canvas_token, notion_token, page_id, school_ab)
-		new_db_id = user.createDatabase()
+		new_db_id = user.createDatabase(properties=settings.db_properties)
 
 		if new_db_id:
 			settings.notion_database_id = new_db_id
