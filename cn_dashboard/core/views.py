@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-from .models import UserSettings
+from .models import UserSettings, SyncHistory
 
 from integrations.user import User as IntegrationUser
 
@@ -57,27 +57,70 @@ def import_assignments(request):
     school_domain = settings.school_domain
 
     if not canvas_token or not school_domain or not notion_token or not notion_page_id:
+        SyncHistory.objects.create(
+            user=request.user,
+            action='import',
+            status='error',
+            error_messages=["Missing Canvas/Notion credentials or page id"]
+        )
         return JsonResponse({"ok": False, "error": "Missing Canvas/Notion credentials or page id"}, status=400)
 
     # Prefer an explicit notion_database_id (most recently created DB) if available
     db_id = settings.notion_database_id if settings.notion_database_id else None
 
-    integrator = IntegrationUser(
-        canvas_token, notion_token, notion_page_id, school_domain, database_id=db_id
-    )
+    try:
+        integrator = IntegrationUser(
+            canvas_token, notion_token, notion_page_id, school_domain, database_id=db_id
+        )
 
-    courses = integrator.getAllCourses()
-    # This will create DB if needed and upsert new/existing assignments into Notion
-    result = integrator.enterAssignmentsToNotionDb(courses)
+        courses = integrator.getAllCourses()
+        # This will create DB if needed and upsert new/existing assignments into Notion
+        result = integrator.enterAssignmentsToNotionDb(courses)
 
-    created = result.get('created', 0) if isinstance(result, dict) else 0
-    updated = result.get('updated', 0) if isinstance(result, dict) else 0
-    errors = result.get('errors', []) if isinstance(result, dict) else []
+        created_count = result.get('created', 0) if isinstance(result, dict) else 0
+        updated_count = result.get('updated', 0) if isinstance(result, dict) else 0
+        errors = result.get('errors', []) if isinstance(result, dict) else []
 
-    return JsonResponse({
-        "ok": True,
-        "created": created,
-        "updated": updated,
-        "errors": len(errors),
-        "error_messages": errors[:10],
-    })
+        # Determine status: error if only errors, success if no errors, error if all failed
+        has_successes = created_count > 0 or updated_count > 0
+        has_errors = len(errors) > 0
+        
+        if has_errors and not has_successes:
+            status = 'error'
+        else:
+            status = 'success' if not has_errors else 'error'
+
+        # Log result
+        SyncHistory.objects.create(
+            user=request.user,
+            action='import',
+            status=status,
+            created_count=created_count,
+            updated_count=updated_count,
+            error_count=len(errors),
+            error_messages=errors[:10]
+        )
+
+        return JsonResponse({
+            "ok": True,
+            "created": created_count,
+            "updated": updated_count,
+            "errors": len(errors),
+            "error_messages": errors[:10],
+        })
+    except Exception as e:
+        SyncHistory.objects.create(
+            user=request.user,
+            action='import',
+            status='error',
+            error_count=1,
+            error_messages=[str(e)]
+        )
+        return JsonResponse({"ok": False, "error": str(e)}, status=500)
+
+
+@login_required
+def sync_history(request):
+    """Display sync history for the current user."""
+    records = SyncHistory.objects.filter(user=request.user)[:50]
+    return render(request, "core/sync-history.html", {'records': records})

@@ -1,31 +1,12 @@
+{% extends "core/base.html" %}
+
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | CanvasSync</title>
-    <link rel="stylesheet" href="{% static 'core/styles.css' %}">
-</head>
-<body class="dashboard-body">
 
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <span class="avatar">JS</span> {{ request.user.first_name|default:request.user.username }}'s Workspace
-        </div>
-        <nav class="sidebar-nav">
-            <div class="nav-item active">🏠 Home</div>
-            <div class="nav-item">🔄 Sync History</div>
-            <div class="nav-item">⚙️ Settings</div>
-        </nav>
-    </aside>
+{% block title %}Dashboard | CanvasSync{% endblock %}
 
-    <main class="main-content">
-        <header class="content-header">
-            <div class="breadcrumb">Workspace / <span>Canvas Dashboard</span></div>
-        </header>
+{% block breadcrumb %}Workspace / <span>Canvas Dashboard</span>{% endblock %}
 
-        <section class="canvas">
+{% block content %}
             <h1 class="page-title">🚀 CanvasSync Control</h1>
             <p class="subtitle">Manage your Notion integration and secret keys below.</p>
 
@@ -136,5 +117,4 @@
 
     {{ db_properties|json_script:"db-properties" }}
     <script src="{% static 'core/script.js' %}"></script>
-</body>
-</html>
+{% endblock %}

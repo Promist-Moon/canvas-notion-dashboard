@@ -1,0 +1,155 @@
+{% extends "core/base.html" %}
+
+{% load static %}
+
+{% block title %}Sync History | CanvasSync{% endblock %}
+
+{% block breadcrumb %}Workspace / <span>Sync History</span>{% endblock %}
+
+{% block extra_styles %}
+    <style>
+        .sync-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .sync-table thead {
+            background: #f5f5f5;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .sync-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+        }
+        .sync-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .sync-table tbody tr:hover {
+            background: #fafafa;
+        }
+        .sync-table .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .sync-table .status-badge.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .sync-table .status-badge.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .sync-table .action-badge {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .sync-table .counts {
+            font-size: 13px;
+            color: #555;
+        }
+        .sync-table .counts .count-item {
+            margin-right: 12px;
+        }
+        .sync-table .timestamp {
+            color: #999;
+            font-size: 13px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+            <h1 class="page-title">🔄 Sync History</h1>
+            <p class="subtitle">View all your database creation and assignment import activities.</p>
+
+            {% if records %}
+                <table class="sync-table">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Status</th>
+                            <th>Timestamp</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                            <tr>
+                                <td>
+                                    <span class="action-badge">
+                                        {% if record.action == 'create_db' %}
+                                            ✨ Create DB
+                                        {% else %}
+                                            📥 Import
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-badge {% if record.status == 'success' %}success{% else %}error{% endif %}">
+                                        {% if record.status == 'success' %}✓ Success{% else %}✗ {% if record.created_count > 0 or record.updated_count > 0 %}Partial{% else %}Error{% endif %}{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="timestamp">{{ record.created_at|date:"M d, Y H:i" }}</span>
+                                </td>
+                                <td>
+                                    {% if record.action == 'create_db' %}
+                                        {% if record.status == 'success' %}
+                                            <span style="color: #666; font-size: 13px;">
+                                                Database ID: <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 11px;">{{ record.database_id|truncatechars:15 }}</code>
+                                            </span>
+                                        {% else %}
+                                            <span style="color: #d32f2f; font-size: 13px;">
+                                                {{ record.error_messages|first }}
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="counts">
+                                            {% if record.status == 'success' %}
+                                                <span class="count-item" style="color: #2e7d32;">✓ Created: {{ record.created_count }}</span>
+                                                <span class="count-item" style="color: #1565c0;">↻ Updated: {{ record.updated_count }}</span>
+                                                {% if record.error_count > 0 %}
+                                                    <span class="count-item" style="color: #f57c00;">⚠ Errors: {{ record.error_count }}</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span style="color: #d32f2f;">{{ record.error_messages|first }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <h3>No sync history yet</h3>
+                    <p>Create a database or import assignments to see your activity history here.</p>
+                </div>
+            {% endif %}
+        {% endblock %}

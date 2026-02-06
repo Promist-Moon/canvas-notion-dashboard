@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CanvasSync{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'core/styles.css' %}">
+    {% block extra_styles %}{% endblock %}
+</head>
+<body class="dashboard-body">
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span class="avatar">JS</span> {{ request.user.first_name|default:request.user.username }}'s Workspace
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{% url 'core:landing' %}" style="text-decoration: none; color: inherit;">
+                <div class="nav-item {% if request.resolver_match.url_name == 'landing' %}active{% endif %}">🏠 Home</div>
+            </a>
+            <a href="{% url 'core:sync_history' %}" style="text-decoration: none; color: inherit;">
+                <div class="nav-item {% if request.resolver_match.url_name == 'sync_history' %}active{% endif %}">🔄 Sync History</div>
+            </a>
+            <div class="nav-item">⚙️ Settings</div>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="content-header">
+            <div class="breadcrumb">{% block breadcrumb %}Workspace{% endblock %}</div>
+        </header>
+
+        <section class="canvas">
+            {% block content %}{% endblock %}
+        </section>
+    </main>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -2,7 +2,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 
-from core.models import UserSettings
+from core.models import UserSettings, SyncHistory
 
 from .user import User
 
@@ -27,9 +27,21 @@ def create_database(request):
 	school_ab = settings.school_domain or ""
 
 	if not notion_token or not canvas_token:
+		SyncHistory.objects.create(
+			user=request.user,
+			action='create_db',
+			status='error',
+			error_messages=["Notion or Canvas token missing"]
+		)
 		return JsonResponse({"ok": False, "error": "Notion or Canvas token missing."}, status=400)
 
 	if not page_id:
+		SyncHistory.objects.create(
+			user=request.user,
+			action='create_db',
+			status='error',
+			error_messages=["Notion Page ID not set"]
+		)
 		return JsonResponse({"ok": False, "error": "Notion Page ID not set. Add it in Configure Secrets."}, status=400)
 
 	try:
@@ -39,8 +51,26 @@ def create_database(request):
 		if new_db_id:
 			settings.notion_database_id = new_db_id
 			settings.save()
+			SyncHistory.objects.create(
+				user=request.user,
+				action='create_db',
+				status='success',
+				database_id=new_db_id
+			)
 			return JsonResponse({"ok": True, "database_id": new_db_id})
 		else:
+			SyncHistory.objects.create(
+				user=request.user,
+				action='create_db',
+				status='error',
+				error_messages=["No database id returned from Notion"]
+			)
 			return JsonResponse({"ok": False, "error": "No database id returned from Notion."}, status=500)
 	except Exception as e:
+		SyncHistory.objects.create(
+			user=request.user,
+			action='create_db',
+			status='error',
+			error_messages=[str(e)]
+		)
 		return JsonResponse({"ok": False, "error": str(e)}, status=500)
