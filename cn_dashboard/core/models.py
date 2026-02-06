@@ -8,3 +8,5 @@ class UserSettings(models.Model):
     canvas_token = models.CharField(max_length=255, blank=True)
     school_domain = models.CharField(max_length=255, blank=True)
     db_properties = models.JSONField(default=list)
+    notion_page_id = models.CharField(max_length=255, blank=True, null=True)
+    notion_database_id = models.CharField(max_length=255, blank=True, null=True)

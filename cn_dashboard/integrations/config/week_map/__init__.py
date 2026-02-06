@@ -1,0 +1,1 @@
+from .weeks import WEEK_RANGES_BY_SEMESTER

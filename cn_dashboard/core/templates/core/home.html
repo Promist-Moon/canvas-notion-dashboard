@@ -58,7 +58,7 @@
                         </div>
                     </div>
 
-                    <div class="action-card sync-card" onclick="handleAction('import')">
+                    <div class="action-card sync-card" onclick="handleAction('import', this)">
                         <div class="card-icon">📥</div>
                         <div class="card-info">
                             <h3>Import Assignments</h3>
@@ -83,6 +83,10 @@
                 <div class="form-group">
                     <label class="notion-label">Canvas API Developer Key</label>
                     <input type="password" name="canvas_token" class="notion-input" placeholder="7892~..." value="{{canvas_token | default:''}}">
+                </div>
+                <div class="form-group">
+                    <label class="notion-label">Notion Page ID</label>
+                    <input type="text" name="notion_page_id" class="notion-input" placeholder="Notion page id where DB will be created" value="{{notion_page_id | default:''}}">
                 </div>
                 <div class="form-group">
                     <label class="notion-label">School Domain</label>

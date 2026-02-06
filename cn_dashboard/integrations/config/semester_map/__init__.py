@@ -1,0 +1,1 @@
+from .semesters import SEMESTER_RANGES
