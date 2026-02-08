@@ -11,9 +11,19 @@ class User:
         notionPageId,
         schoolAb,
         database_id=None,
+        db_properties=None,
+        semester_start_date=None,
+        semester_end_date=None,
+        semester_label=None,
+        semester_phases=None,
     ):
         self.notionToken = notionToken
         self.database_id = database_id
+        self.db_properties = db_properties or []
+        self.semester_start_date = semester_start_date
+        self.semester_end_date = semester_end_date
+        self.semester_label = semester_label
+        self.semester_phases = semester_phases or []
         self.canvasProfile = CanvasApi(canvasKey, schoolAb)
         self.page_ids = {"Default": notionPageId}
         self.generated_db_id = None
@@ -22,6 +32,10 @@ class User:
             notionToken,
             database_id=database_id,
             schoolAb=schoolAb,
+            semester_start_date=semester_start_date,
+            semester_end_date=semester_end_date,
+            semester_label=semester_label,
+            semester_phases=semester_phases,
         )
 
     # Shorthand fucntion for getting list of courses that started within the past 6 months from Canvas
@@ -37,9 +51,15 @@ class User:
         if not self.notionProfile.test_if_database_id_exists():
             self.notionProfile = NotionApi(
                 self.notionToken,
-                database_id=self.createDatabase(),
+                database_id=self.createDatabase(properties=self.db_properties),
                 schoolAb=self.schoolAb,
+                semester_start_date=self.semester_start_date,
+                semester_end_date=self.semester_end_date,
+                semester_label=self.semester_label,
+                semester_phases=self.semester_phases,
             )
+        # Cache DB properties once to ensure we only send supported fields.
+        self.notionProfile.refresh_database_properties()
 
         created, create_errors = self.addNewDatabaseItems(courseList, timeframe)
         updated, update_errors = self.updateExistingDatabaseItems(courseList)
@@ -59,12 +79,20 @@ class User:
         self.canvasProfile.set_courses_and_id()
         created = 0
         errors = []
+        existing_by_url = self.notionProfile.parseDatabaseForAssignments()
+        existing_by_key = self.notionProfile.parseDatabaseForAssignmentsByKey()
+
         for course in courseList:
-            for assignment in self.canvasProfile.update_assignment_objects(
-                self.notionProfile.parseDatabaseForAssignments(),
-                course.name,
-                timeframe,
-            ):
+            assignmentObjects = self.canvasProfile.get_assignment_objects(
+                course.name, timeframe
+            )
+            for assignment in assignmentObjects:
+                assignment_url = assignment.get("url")
+                assignment_key = f"{course.name}||{assignment.get('name')}"
+
+                if assignment_url in existing_by_url or assignment_key in existing_by_key:
+                    continue
+
                 due_date = assignment.get("due_at")
                 dueDate = (
                     date_to_sg_offset_iso(due_date)
@@ -96,13 +124,22 @@ class User:
         updated = 0
         errors = []
         notionAssignments = self.notionProfile.parseDatabaseForAssignments()
+        notionAssignmentsByKey = self.notionProfile.parseDatabaseForAssignmentsByKey()
 
         for course in courseList:
             courseName = course.name
             assignmentObjects = self.canvasProfile.get_assignment_objects(courseName)
 
             for assignment in assignmentObjects:
-                if assignment["url"] in notionAssignments:
+                assignment_url = assignment.get("url")
+                assignment_key = f"{courseName}||{assignment.get('name')}"
+                page_id = None
+                if assignment_url in notionAssignments:
+                    page_id = notionAssignments.get(assignment_url)
+                elif assignment_key in notionAssignmentsByKey:
+                    page_id = notionAssignmentsByKey.get(assignment_key)
+
+                if page_id:
                     due_date = assignment.get("due_at")
                     dueDate = (
                         date_to_sg_offset_iso(due_date)
@@ -112,7 +149,7 @@ class User:
 
                     try:
                         res = self.notionProfile.updateDatabaseItem(
-                            page_id=notionAssignments[assignment["url"]],
+                            page_id=page_id,
                             className=courseName,
                             dueDate=dueDate,
                             assignmentName=assignment["name"],

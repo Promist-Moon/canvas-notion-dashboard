@@ -1,0 +1,398 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Settings | CanvasSync{% endblock %}
+
+{% block breadcrumb %}Workspace / <span>Settings</span>{% endblock %}
+
+{% block content %}
+        <header class="settings-header">
+            <h1>My Settings</h1>
+        </header>
+        <p class="subtitle">Manage your settings and configurations here.</p>
+
+        <section class="settings-section fade-in">
+            <h2 class="section-title">Account</h2>
+            <div class="settings-group">
+                <form method="POST" action="{% url 'core:change_username' %}">
+                    {% csrf_token %}
+                    <div class="form-item">
+                        <label class="notion-label">Username</label>
+                        <div class="input-inline">
+                            <input type="text" name="username" class="notion-input" value="{{ request.user.username }}">
+                            <button type="submit" class="btn btn-outline small">Update</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="form-item mt-4">
+                    <label class="notion-label">Password</label>
+                    <div class="input-inline">
+                        <input type="password" class="notion-input" value="********" disabled>
+                        <button type="button" class="btn btn-outline small" onclick="openModal('passwordModal')">Change Password</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-section fade-in">
+            <h2 class="section-title">Preferences</h2>
+            <p class="modal-desc">Tap a property to adjust how it’s computed.</p>
+            <div class="property-bar property-bar-center">
+                <span class="tag tag-default tag-clickable settings-tag" onclick="openModal('courseLogicModal')">Course</span>
+                <span class="tag pill-blue tag-clickable settings-tag" onclick="openModal('semesterLogicModal')">Semester</span>
+                <span class="tag pill-orange tag-clickable settings-tag" onclick="openModal('weekLogicModal')">Week</span>
+                <span class="tag pill-green tag-clickable settings-tag" onclick="openModal('statusLogicModal')">Status</span>
+                <span class="tag pill-pink tag-clickable settings-tag" onclick="openModal('pointsLogicModal')">Points</span>
+            </div>
+            <form method="POST" action="{% url 'core:save_preferences' %}">
+                {% csrf_token %}
+                <div class="settings-group">
+                    <div class="form-row">
+                        <div class="form-group col-md-6 pl-0">
+                            <label class="notion-label">Current Semester</label>
+                            <select name="semester" class="notion-input">
+                                <option value="Sem 1" {% if settings.semester == "Sem 1" %}selected{% endif %}>Semester 1</option>
+                                <option value="Sem 2" {% if settings.semester == "Sem 2" %}selected{% endif %}>Semester 2</option>
+                                <option value="Summer" {% if settings.semester == "Summer" %}selected{% endif %}>Summer</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6 pr-0">
+                            <label class="notion-label">Current Week</label>
+                            <input type="number" name="week" class="notion-input" value="{{ settings.week|default:1 }}" min="1" max="13">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-black mt-2 btn-compact spaced-top">Save Preferences</button>
+                </div>
+            </form>
+        </section>
+
+        <div id="courseLogicModal" class="notion-modal-overlay">
+            <div class="notion-modal">
+                <h2>Course Logic</h2>
+                <p class="modal-desc">Placeholder: define how Course should be derived.</p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('courseLogicModal')">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="semesterLogicModal" class="notion-modal-overlay">
+            <div class="notion-modal">
+                <h2>Semester Logic</h2>
+                <p class="modal-desc">Add semester phases with their own date ranges. These will be used to assign the Semester property.</p>
+
+                {% if semester_error %}
+                    <div class="notion-alert">{{ semester_error }}</div>
+                {% endif %}
+
+                <form method="POST" action="{% url 'core:save_semester_bounds' %}">
+                    {% csrf_token %}
+                    <label class="notion-label">Semester Phases</label>
+                    <div class="settings-phase-editor">
+                        <div class="settings-phase-row">
+                            <input type="text" id="phase-name-input" class="notion-input" placeholder="Phase name">
+                            <input type="date" id="phase-start-input" class="notion-input">
+                            <input type="date" id="phase-end-input" class="notion-input">
+                            <button type="button" class="btn btn-outline btn-compact" id="phase-action-btn" onclick="addOrUpdatePhase()">Add Semester</button>
+                        </div>
+                    </div>
+
+                    <label class="notion-label spaced-top">Current Phases</label>
+                    <div id="semester-phase-pills" class="settings-phase-pills">
+                        {% if settings.semester_phases %}
+                            <div id="semester-phase-hidden">
+                                {% for phase in settings.semester_phases %}
+                                    <input type="hidden" name="phase_name" value="{{ phase.name }}">
+                                    <input type="hidden" name="phase_start" value="{{ phase.start }}">
+                                    <input type="hidden" name="phase_end" value="{{ phase.end }}">
+                                {% endfor %}
+                            </div>
+                            {% for phase in settings.semester_phases %}
+                                <span class="tag tag-default settings-tag settings-pill" data-index="{{ forloop.counter0 }}" onclick="editPhase({{ forloop.counter0 }})">
+                                    <span class="settings-pill-text">{{ phase.name }}</span>
+                                    <button type="button" class="settings-pill-remove" onclick="removePhase(event, {{ forloop.counter0 }})">×</button>
+                                </span>
+                            {% endfor %}
+                        {% else %}
+                            <div id="semester-phase-hidden"></div>
+                            <span class="tag tag-default settings-tag">No phases yet</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6 pl-0">
+                            <label class="notion-label">Semesters Per Year</label>
+                            <input type="number" name="semesters_per_year" class="notion-input" min="1" value="{{ settings.semesters_per_year|default:'' }}">
+                        </div>
+                        <div class="form-group col-md-6 pr-0">
+                            <label class="notion-label">Years Per Program</label>
+                            <input type="number" name="years_per_program" class="notion-input" min="1" value="{{ settings.years_per_program|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="notion-label">Semester Phase Names (Comma-Separated)</label>
+                        <input type="text" name="semester_phase_names" class="notion-input" placeholder="Sem 1, Winter Term, Sem 2, Special Term" value="{{ settings.semester_phase_names|join:', ' }}">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" onclick="closeModal('semesterLogicModal')">Cancel</button>
+                        <button type="submit" class="btn btn-black">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="weekLogicModal" class="notion-modal-overlay">
+            <div class="notion-modal">
+                <h2>Week Logic</h2>
+                <p class="modal-desc">Placeholder: define how Week should be derived.</p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('weekLogicModal')">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="statusLogicModal" class="notion-modal-overlay">
+            <div class="notion-modal">
+                <h2>Status Logic</h2>
+                <p class="modal-desc">Placeholder: define how Status should be derived.</p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('statusLogicModal')">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pointsLogicModal" class="notion-modal-overlay">
+            <div class="notion-modal">
+                <h2>Points Logic</h2>
+                <p class="modal-desc">Placeholder: define how Points should be derived.</p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('pointsLogicModal')">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <section class="settings-section last fade-in">
+            <h2 class="section-title danger-text">Support & Session</h2>
+            <div class="settings-group">
+                <div class="form-item d-flex justify-content-between align-items-center logout-row">
+                    <div>
+                        <p class="history-date">You will need to sign in again to sync assignments.</p>
+                    </div>
+                    <button type="button" class="btn prop-danger btn-compact logout-action" onclick="openModal('logoutModal')">Log out</button>
+                </div>
+            </div>
+        </section>
+
+    <div id="passwordModal" class="notion-modal-overlay">
+        <div class="notion-modal">
+            <h2>Change Password</h2>
+            <p class="modal-desc">Keep your account secure with a strong password.</p>
+
+            {% if password_error %}
+                <div class="notion-alert">{{ password_error }}</div>
+            {% endif %}
+
+            <form method="POST" action="{% url 'core:password_change' %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="notion-label">Current Password</label>
+                    <input type="password" name="current_password" class="notion-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="notion-label">New Password</label>
+                    <input type="password" name="new_password" class="notion-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="notion-label">Confirm New Password</label>
+                    <input type="password" name="confirm_password" class="notion-input" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('passwordModal')">Cancel</button>
+                    <button type="submit" class="btn btn-black">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="logoutModal" class="notion-modal-overlay">
+        <div class="notion-modal">
+            <h2>Log out?</h2>
+            <p class="modal-desc">Are you sure you want to log out?</p>
+            <form method="post" action="{% url 'core:logout' %}">
+                {% csrf_token %}
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('logoutModal')">Cancel</button>
+                    <button type="submit" class="btn btn-black">Yes, log out</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="{% static 'core/script.js' %}"></script>
+    {% if open_password_modal %}
+    <script>
+        openModal('passwordModal');
+    </script>
+    {% endif %}
+    {% if open_semester_modal %}
+    <script>
+        openModal('semesterLogicModal');
+    </script>
+    {% endif %}
+    <script>
+        let editingPhaseIndex = null;
+
+        function addOrUpdatePhase() {
+            const nameInput = document.getElementById('phase-name-input');
+            const startInput = document.getElementById('phase-start-input');
+            const endInput = document.getElementById('phase-end-input');
+            const name = nameInput ? nameInput.value.trim() : '';
+            const start = startInput ? startInput.value : '';
+            const end = endInput ? endInput.value : '';
+
+            if (!name || !start || !end) {
+                return;
+            }
+
+            if (editingPhaseIndex === null) {
+                addPhasePill(name, start, end);
+            } else {
+                updatePhasePill(editingPhaseIndex, name, start, end);
+            }
+
+            if (nameInput) nameInput.value = '';
+            if (startInput) startInput.value = '';
+            if (endInput) endInput.value = '';
+            editingPhaseIndex = null;
+            setPhaseActionLabel('Add Semester');
+        }
+
+        function addPhasePill(name, start, end) {
+            const pills = document.getElementById('semester-phase-pills');
+            const hidden = document.getElementById('semester-phase-hidden');
+            if (!pills) return;
+            if (!hidden) {
+                const hiddenContainer = document.createElement('div');
+                hiddenContainer.id = 'semester-phase-hidden';
+                pills.prepend(hiddenContainer);
+            }
+            const hiddenSafe = document.getElementById('semester-phase-hidden');
+
+            const placeholder = pills.querySelector('.settings-tag');
+            if (placeholder && placeholder.textContent.includes('No phases yet')) {
+                pills.innerHTML = '';
+            }
+
+            const index = pills.querySelectorAll('.settings-pill').length;
+            const pill = document.createElement('span');
+            pill.className = 'tag tag-default settings-tag settings-pill';
+            pill.dataset.index = String(index);
+            pill.onclick = () => editPhase(index);
+            pill.innerHTML = `
+                <span class="settings-pill-text"></span>
+                <button type="button" class="settings-pill-remove">×</button>
+            `;
+            pill.querySelector('.settings-pill-text').textContent = name;
+            pill.querySelector('.settings-pill-remove').onclick = (event) => removePhase(event, index);
+            pills.appendChild(pill);
+
+            hiddenSafe.insertAdjacentHTML(
+                'beforeend',
+                `<input type="hidden" name="phase_name" value="${escapeHtml(name)}">
+                 <input type="hidden" name="phase_start" value="${escapeHtml(start)}">
+                 <input type="hidden" name="phase_end" value="${escapeHtml(end)}">`
+            );
+        }
+
+        function updatePhasePill(index, name, start, end) {
+            const pills = document.getElementById('semester-phase-pills');
+            const hidden = document.getElementById('semester-phase-hidden');
+            if (!pills || !hidden) return;
+
+            const pill = pills.querySelector(`.settings-pill[data-index="${index}"]`);
+            const hiddenInputs = hidden.querySelectorAll('input[name="phase_name"], input[name="phase_start"], input[name="phase_end"]');
+            const base = index * 3;
+            if (pill) {
+                const text = pill.querySelector('.settings-pill-text');
+                if (text) text.textContent = name;
+            }
+            if (hiddenInputs[base]) hiddenInputs[base].value = name;
+            if (hiddenInputs[base + 1]) hiddenInputs[base + 1].value = start;
+            if (hiddenInputs[base + 2]) hiddenInputs[base + 2].value = end;
+        }
+
+        function editPhase(index) {
+            const hidden = document.getElementById('semester-phase-hidden');
+            if (!hidden) return;
+            const hiddenInputs = hidden.querySelectorAll('input[name="phase_name"], input[name="phase_start"], input[name="phase_end"]');
+            const base = index * 3;
+            const nameInput = document.getElementById('phase-name-input');
+            const startInput = document.getElementById('phase-start-input');
+            const endInput = document.getElementById('phase-end-input');
+            if (!nameInput || !startInput || !endInput) return;
+
+            nameInput.value = hiddenInputs[base] ? hiddenInputs[base].value : '';
+            startInput.value = hiddenInputs[base + 1] ? hiddenInputs[base + 1].value : '';
+            endInput.value = hiddenInputs[base + 2] ? hiddenInputs[base + 2].value : '';
+            editingPhaseIndex = index;
+            setPhaseActionLabel('Update Semester');
+        }
+
+        function removePhase(event, index) {
+            event.preventDefault();
+            event.stopPropagation();
+            const pills = document.getElementById('semester-phase-pills');
+            const hidden = document.getElementById('semester-phase-hidden');
+            if (!pills || !hidden) return;
+
+            const pill = pills.querySelector(`.settings-pill[data-index="${index}"]`);
+            if (pill) pill.remove();
+
+            const hiddenInputs = hidden.querySelectorAll('input[name="phase_name"], input[name="phase_start"], input[name="phase_end"]');
+            const base = index * 3;
+            [hiddenInputs[base], hiddenInputs[base + 1], hiddenInputs[base + 2]].forEach((el) => {
+                if (el) el.remove();
+            });
+
+            reindexPhasePills();
+            if (!pills.querySelector('.settings-pill')) {
+                pills.innerHTML = '<span class="tag tag-default settings-tag">No phases yet</span>';
+            }
+            if (editingPhaseIndex === index) {
+                editingPhaseIndex = null;
+                setPhaseActionLabel('Add Semester');
+            }
+        }
+
+        function reindexPhasePills() {
+            const pills = document.querySelectorAll('#semester-phase-pills .settings-pill');
+            pills.forEach((pill, idx) => {
+                pill.dataset.index = String(idx);
+                pill.onclick = () => editPhase(idx);
+                const removeBtn = pill.querySelector('.settings-pill-remove');
+                if (removeBtn) {
+                    removeBtn.onclick = (event) => removePhase(event, idx);
+                }
+            });
+        }
+
+        function setPhaseActionLabel(label) {
+            const btn = document.getElementById('phase-action-btn');
+            if (btn) btn.textContent = label;
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        reindexPhasePills();
+    </script>
+{% endblock %}

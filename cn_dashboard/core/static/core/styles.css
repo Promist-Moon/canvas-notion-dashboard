@@ -102,6 +102,24 @@ h1 {
     transition: background 0.2s ease;
 }
 
+.btn-compact {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+}
+
+.spaced-top {
+    margin-top: 12px;
+}
+
+.logout-row {
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.logout-action {
+    margin-top: 6px;
+}
+
 .btn-black {
     background: #000;
     color: #fff;
@@ -166,6 +184,16 @@ h1 {
     padding: 2px 8px;
     border-radius: 3px;
     font-weight: 500;
+}
+
+.tag-clickable {
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.tag-clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .tag-blue { background: var(--tag-blue); color: var(--tag-blue-text); }
@@ -319,6 +347,34 @@ h1 {
     flex-direction: column;
 }
 
+.content-header {
+    padding: 24px 100px 0;
+}
+
+.breadcrumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: #faf9f7;
+}
+
+.breadcrumb span {
+    color: var(--text-main);
+    background: #f1f0ee;
+    border: 1px solid rgba(55, 53, 47, 0.08);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
 .canvas {
     padding: 40px 100px;
     max-width: 1000px;
@@ -424,13 +480,78 @@ h1 {
 
 .property-bar {
     min-height: 45px;
-    padding: 8px;
-    border: 1px solid var(--border-color);
+    padding: 8px 0;
+    border: none;
     border-radius: 6px;
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    background: transparent;
+}
+
+.property-bar-center {
+    justify-content: center;
+}
+
+.settings-tag {
+    font-size: 0.85rem;
+    padding: 4px 12px;
+    border-radius: 6px;
+}
+
+.settings-phase-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.settings-phase-editor {
+    background: rgba(55, 53, 47, 0.04);
+    border: 1px solid rgba(55, 53, 47, 0.08);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.settings-phase-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.settings-pill {
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
-    background: #fbfbfa;
+    padding-right: 8px;
+}
+
+.settings-pill-remove {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: 0 2px;
+}
+
+.settings-pill-remove:hover {
+    color: var(--text-main);
+}
+
+.settings-phase-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@media (max-width: 900px) {
+    .settings-phase-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 .tag-default {
@@ -555,4 +676,97 @@ h1 {
     font-size: 48px;
     margin-bottom: 16px;
     opacity: 0.5;
+}
+
+/* Settings Page Layout */
+.settings-container {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.settings-header {
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 20px;
+}
+
+.settings-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.settings-section {
+    margin-bottom: 48px;
+}
+
+.section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+}
+
+.settings-group {
+    padding-left: 4px;
+}
+
+.input-inline {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.small {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+.back-link {
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: var(--text-main);
+}
+
+.danger-text {
+    color: #d44c47;
+}
+
+.danger-border {
+    color: #d44c47 !important;
+    border-color: rgba(212, 76, 71, 0.3) !important;
+}
+
+.danger-border:hover {
+    background: #fdf2f2 !important;
+}
+
+.prop-danger {
+    background: var(--tag-pink);
+    color: var(--tag-pink-text);
+    border: 1px solid rgba(176, 0, 32, 0.25);
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.prop-danger:hover {
+    background: #f7dede;
+}
+
+.border-bottom {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.user-badge {
+    font-size: 0.85rem;
+    background: rgba(55, 53, 47, 0.08);
+    padding: 4px 10px;
+    border-radius: 20px;
 }

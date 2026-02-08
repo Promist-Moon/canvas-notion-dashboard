@@ -11,6 +11,13 @@ class UserSettings(models.Model):
     db_properties = models.JSONField(default=list)
     notion_page_id = models.CharField(max_length=255, blank=True, null=True)
     notion_database_id = models.CharField(max_length=255, blank=True, null=True)
+    semester_start_date = models.DateField(blank=True, null=True)
+    semester_end_date = models.DateField(blank=True, null=True)
+    semester_label = models.CharField(max_length=100, blank=True, null=True)
+    semesters_per_year = models.IntegerField(blank=True, null=True)
+    years_per_program = models.IntegerField(blank=True, null=True)
+    semester_phase_names = models.JSONField(default=list, blank=True)
+    semester_phases = models.JSONField(default=list, blank=True)
 
 
 class SyncHistory(models.Model):

@@ -14,7 +14,7 @@ def login_view(request):
         user = authenticate(username=username, password=password)
         if user is None:
             messages.error(request, "Invalid credentials")
-            return redirect('login')
+            return redirect('accounts:login')
         auth_login(request, user)
         return redirect('core:landing')
 

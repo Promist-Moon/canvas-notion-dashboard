@@ -7,11 +7,13 @@
 {% block breadcrumb %}Workspace / <span>Sync History</span>{% endblock %}
 
 {% block content %}
-            <h1 class="page-title">🔄 Sync History</h1>
+            <header class="settings-header">
+                <h1>🔄 Sync History</h1>
+            </header>
             <p class="subtitle">View all your database creation and assignment import activities.</p>
 
             {% if records %}
-                <table class="sync-table">
+                <table class="sync-table fade-in">
                     <thead>
                         <tr>
                             <th>Action</th>

@@ -21,7 +21,9 @@
             <a href="{% url 'core:sync_history' %}" style="text-decoration: none; color: inherit;">
                 <div class="nav-item {% if request.resolver_match.url_name == 'sync_history' %}active{% endif %}">🔄 Sync History</div>
             </a>
-            <div class="nav-item">⚙️ Settings</div>
+            <a href="{% url 'core:settings' %}" style="text-decoration: none; color: inherit;">
+                <div class="nav-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">⚙️ Settings</div>
+            </a>
         </nav>
     </aside>
 

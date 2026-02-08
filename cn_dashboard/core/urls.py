@@ -11,4 +11,8 @@ urlpatterns = [
     path("create-database/", integrations_views.create_database, name="create_database"),
     path("import-assignments/", views.import_assignments, name="import_assignments"),
     path("sync-history/", views.sync_history, name="sync_history"),
+    path("settings/", views.settings, name="settings"),
+    path("settings/change-username/", views.change_username, name="change_username"),
+    path("settings/save-preferences/", views.save_preferences, name="save_preferences"),
+    path
 ]

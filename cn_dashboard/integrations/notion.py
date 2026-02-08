@@ -8,17 +8,26 @@ class NotionApi:
         notionToken=None,
         database_id=None,
         schoolAb=None,
+        semester_start_date=None,
+        semester_end_date=None,
+        semester_label=None,
+        semester_phases=None,
         version="2021-08-16",
     ):
         self.database_id = database_id
         self.notionToken = notionToken
         self.schoolAb = schoolAb
+        self.semester_start_date = semester_start_date
+        self.semester_end_date = semester_end_date
+        self.semester_label = semester_label
+        self.semester_phases = semester_phases or []
         self.notionHeaders = {
             "Authorization": "Bearer " + notionToken,
             "Content-Type": "application/json",
             "Notion-Version": "2021-08-16",
         }
         self._db_properties = None
+        self._assignment_cache = None
 
     def queryDatabase(self):
         readUrl = f"https://api.notion.com/v1/databases/{self.database_id}/query"
@@ -54,6 +63,11 @@ class NotionApi:
         data = res.json() if res is not None else {}
         self._db_properties = data.get("properties", {}) if isinstance(data, dict) else {}
         return self._db_properties
+
+    def refresh_database_properties(self):
+        self._db_properties = None
+        self._assignment_cache = None
+        return self._get_database_properties()
 
     def _filter_properties_for_database(self, properties):
         db_properties = self._get_database_properties()
@@ -181,16 +195,26 @@ class NotionApi:
             "URL": {
                 "url": url,
             },
-            "Week": {
-                "select": {
-                    "name": compute_week_from_due(dueDate),
-                }
-            },
-            "Semester": {
-                "select": {
-                    "name": compute_semester_from_due(dueDate),
-                }
-            },
+                "Week": {
+                    "select": {
+                        "name": compute_week_from_due(
+                            dueDate,
+                            custom_range=(self.semester_start_date, self.semester_end_date),
+                            custom_label=self.semester_label,
+                            custom_phases=self.semester_phases,
+                        ),
+                    }
+                },
+                "Semester": {
+                    "select": {
+                        "name": compute_semester_from_due(
+                            dueDate,
+                            custom_range=(self.semester_start_date, self.semester_end_date),
+                            custom_label=self.semester_label,
+                            custom_phases=self.semester_phases,
+                        ),
+                    }
+                },
         }
 
         newPageData = {
@@ -244,16 +268,26 @@ class NotionApi:
             "URL": {
                 "url": url,
             },
-            "Week": {
-                "select": {
-                    "name": compute_week_from_due(dueDate),
-                }
-            },
-            "Semester": {
-                "select": {
-                    "name": compute_semester_from_due(dueDate),
-                }
-            },
+                "Week": {
+                    "select": {
+                        "name": compute_week_from_due(
+                            dueDate,
+                            custom_range=(self.semester_start_date, self.semester_end_date),
+                            custom_label=self.semester_label,
+                            custom_phases=self.semester_phases,
+                        ),
+                    }
+                },
+                "Semester": {
+                    "select": {
+                        "name": compute_semester_from_due(
+                            dueDate,
+                            custom_range=(self.semester_start_date, self.semester_end_date),
+                            custom_label=self.semester_label,
+                            custom_phases=self.semester_phases,
+                        ),
+                    }
+                },
         }
 
         updatePageData = {
@@ -270,18 +304,53 @@ class NotionApi:
 
     def parseDatabaseForAssignments(self):
         # Return a mapping of assignment URL -> notion page id for quick lookups
-        mapping = {}
+        return self._parse_database_for_assignments().get("by_url", {})
+
+    def parseDatabaseForAssignmentsByKey(self):
+        # Return a mapping of (class|assignment) -> notion page id for quick lookups
+        return self._parse_database_for_assignments().get("by_key", {})
+
+    def _parse_database_for_assignments(self):
+        if self._assignment_cache is not None:
+            return self._assignment_cache
+
+        mapping_by_url = {}
+        mapping_by_key = {}
         data = self.queryDatabase()
 
         results = data.get("results") if data is not None else []
         if results:
             for item in results:
-                try:
-                    url = item["properties"]["URL"]["url"]
-                    page_id = item.get("id")
-                    if url:
-                        mapping[url] = page_id
-                except Exception:
-                    continue
+                page_id = item.get("id")
+                props = item.get("properties", {})
 
-        return mapping
+                url = None
+                try:
+                    url = props.get("URL", {}).get("url")
+                except Exception:
+                    url = None
+
+                assignment_title = None
+                try:
+                    title_parts = props.get("Assignment", {}).get("title", [])
+                    assignment_title = "".join([t.get("plain_text", "") for t in title_parts]).strip() or None
+                except Exception:
+                    assignment_title = None
+
+                class_name = None
+                try:
+                    class_name = props.get("Class", {}).get("select", {}).get("name")
+                except Exception:
+                    class_name = None
+
+                if url:
+                    mapping_by_url[url] = page_id
+                if class_name and assignment_title:
+                    key = f"{class_name}||{assignment_title}"
+                    mapping_by_key[key] = page_id
+
+        self._assignment_cache = {
+            "by_url": mapping_by_url,
+            "by_key": mapping_by_key,
+        }
+        return self._assignment_cache
