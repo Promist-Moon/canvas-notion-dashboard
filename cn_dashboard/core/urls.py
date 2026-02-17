@@ -14,5 +14,7 @@ urlpatterns = [
     path("settings/", views.settings, name="settings"),
     path("settings/change-username/", views.change_username, name="change_username"),
     path("settings/save-preferences/", views.save_preferences, name="save_preferences"),
-    path
+    path("settings/save-semester-bounds/", views.save_semester_bounds, name="save_semester_bounds"),
+    path("settings/password-change/", views.password_change, name="password_change"),
+    path("logout/", views.logout_view, name="logout"),
 ]
